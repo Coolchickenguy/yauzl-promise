@@ -3,24 +3,22 @@
  * Tests
  * ------------------*/
 
-'use strict';
-
 // Init
-require('./support/index.js');
+import './support/index.js';
 
 // Modules
-const pathJoin = require('node:path').join,
-	yauzl = require('yauzl-promise');
+import {join as pathJoin} from 'node:path';
+import {open} from 'yauzl-promise';
 
 // Imports
-const {streamToBuffer, getFiles} = require('./support/utils.js');
+import {streamToBuffer, getFiles, testsRoot} from './support/utils.js';
 
 // Tests
 
 // NB: No tests for ZIP files >= 4 GiB as would require 4 GiB files as fixtures.
 // Have tested on a large collection of Mac OS Archive Utility ZIP files ranging from 4 GiB to 100 GiB.
 
-const FIXTURES_DIR = pathJoin(__dirname, 'fixtures/mac');
+const FIXTURES_DIR = pathJoin(testsRoot, 'fixtures/mac');
 
 let zip;
 afterEach(async () => {
@@ -31,7 +29,7 @@ it('handles empty files', async () => {
 	const zipPath = pathJoin(FIXTURES_DIR, 'empty-files.zip');
 	const expectedFiles = getFiles(zipPath.slice(0, -4));
 
-	zip = await yauzl.open(zipPath);
+	zip = await open(zipPath);
 	await expectZipContentsToBeExpected(zip, expectedFiles);
 	expect(zip.isMaybeMacArchive).toBeTrue();
 });
@@ -40,7 +38,7 @@ it('handles folders', async () => {
 	const zipPath = pathJoin(FIXTURES_DIR, 'folders.zip');
 	const expectedFiles = getFiles(zipPath.slice(0, -4));
 
-	zip = await yauzl.open(zipPath);
+	zip = await open(zipPath);
 	await expectZipContentsToBeExpected(zip, expectedFiles);
 	expect(zip.isMaybeMacArchive).toBeTrue();
 });

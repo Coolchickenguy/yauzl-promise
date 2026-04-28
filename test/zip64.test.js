@@ -3,21 +3,19 @@
  * Tests
  * ------------------*/
 
-'use strict';
-
 // Init
-require('./support/index.js');
+import './support/index.js';
 
 // Modules
-const {readFileSync} = require('node:fs'),
-	pathJoin = require('node:path').join,
-	{Readable: ReadableStream, Writable: WritableStream} = require('node:stream'),
-	BufferList = require('bl'),
-	assert = require('simple-invariant'),
-	yauzl = require('yauzl-promise');
+import {readFileSync} from 'node:fs';
+import {join as pathJoin} from 'node:path';
+import {Readable as ReadableStream, Writable as WritableStream} from 'node:stream';
+import BufferList from 'bl';
+import assert from 'simple-invariant';
+import {fromReader, Reader} from 'yauzl-promise';
 
 // Imports
-const {streamToString} = require('./support/utils.js');
+import {streamToString, testsRoot} from './support/utils.js';
 
 // Tests
 
@@ -29,13 +27,13 @@ const {streamToString} = require('./support/utils.js');
 // 2. Content of the 2 x small files are unzipped successfully by `openReadStream()`.
 // 3. Start of the content of the large binary file is correct (it doesn't test the entire file).
 
-const FRAGMENT_PATH = pathJoin(__dirname, 'fixtures/zip64/zip64.zip_fragment');
+const FRAGMENT_PATH = pathJoin(testsRoot, 'fixtures/zip64/zip64.zip_fragment');
 const LARGE_BIN_LENGTH = 8000000000;
 
 it('handles large ZIP64 file', async () => {
 	const {reader, size} = makeRandomAccessReader();
 
-	const zip = await yauzl.fromReader(reader, size);
+	const zip = await fromReader(reader, size);
 
 	try {
 		const entries = await zip.readEntries();
@@ -86,7 +84,7 @@ function makeRandomAccessReader() {
 	let firstRead = true;
 	const pretendSize = backendContents.length + LARGE_BIN_LENGTH - 4;
 
-	class InflatingReader extends yauzl.Reader {
+	class InflatingReader extends Reader {
 		_createReadStream(start, length) { // eslint-disable-line class-methods-use-this
 			const thisIsTheFirstRead = firstRead,
 				end = start + length;

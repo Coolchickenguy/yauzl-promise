@@ -3,27 +3,25 @@
  * Tests
  * ------------------*/
 
-'use strict';
-
 // Init
-require('./support/index.js');
-
-jest.setTimeout(5 * 60000); // 5 minutes
+import './support/index.js'; // 5 minutes
 
 // Modules
-const pathJoin = require('node:path').join,
-	assert = require('simple-invariant'),
-	yauzl = require('yauzl-promise');
+import {join as pathJoin} from 'node:path';
+import assert from 'simple-invariant';
+import {open} from 'yauzl-promise';
 
 // Imports
-const {streamToString} = require('./support/utils.js');
+import {streamToString, testsRoot} from './support/utils.js';
+
+jest.setTimeout(5 * 60000);
 
 // Tests
 
 // NB: No tests for ZIP files >= 4 GiB as would require 4 GiB files as fixtures.
 // Have tested on a large collection of Mac OS Archive Utility ZIP files ranging from 4 GiB to 100 GiB.
 
-const FIXTURES_DIR = pathJoin(__dirname, 'fixtures/mac');
+const FIXTURES_DIR = pathJoin(testsRoot, 'fixtures/mac');
 
 // Set `MAC_BIG_SIZE` env var to only run test for a certain entry count
 let SIZES = [65534, 65535, 65536, 65537, 131072, 200000];
@@ -48,7 +46,7 @@ describe('handles large number of files', () => {
 		}
 
 		let fileCount = 0;
-		zip = await yauzl.open(zipPath);
+		zip = await open(zipPath);
 		for await (const entry of zip) {
 			fileCount++;
 

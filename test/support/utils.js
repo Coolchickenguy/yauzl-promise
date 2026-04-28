@@ -3,25 +3,24 @@
  * Tests utils
  * ------------------*/
 
-'use strict';
-
 // Modules
-const pathJoin = require('node:path').join,
-	fs = require('node:fs');
-
-// Imports
-const {streamToBuffer} = require('../../lib/utils.js');
+import {join as pathJoin, dirname as pathDirname} from 'node:path';
+import {readdirSync, readFileSync} from 'node:fs';
+import {fileURLToPath} from 'url';
+import {streamToBuffer} from '../../lib/utils.js';
 
 // Exports
 
-module.exports = {streamToString, streamToBuffer, getFiles};
+export {streamToBuffer} from '../../lib/utils.js';
+
+export const testsRoot = pathDirname(pathDirname(fileURLToPath(import.meta.url)));
 
 /**
  * Drain contents of a readable stream into a string.
  * @param {Object} stream - Readable stream
  * @returns {string} - String
  */
-async function streamToString(stream) {
+export async function streamToString(stream) {
 	const buffer = await streamToBuffer(stream);
 	return buffer.toString();
 }
@@ -31,14 +30,14 @@ async function streamToString(stream) {
  * @param {string} dirPath - Path to directory
  * @returns {Array<string>} - Array of file paths
  */
-function getFiles(dirPath) {
+export function getFiles(dirPath) {
 	const files = Object.create(null);
 	getFilesForDir(dirPath, '', files);
 	return files;
 }
 
 function getFilesForDir(fullPath, dirPath, files) {
-	const dirents = fs.readdirSync(fullPath, {withFileTypes: true});
+	const dirents = readdirSync(fullPath, {withFileTypes: true});
 	for (const dirent of dirents) {
 		const filename = dirPath ? `${dirPath}/${dirent.name}` : dirent.name;
 
@@ -48,7 +47,7 @@ function getFilesForDir(fullPath, dirPath, files) {
 		} else if (dirent.name === '.dont_expect_an_empty_dir_entry_for_this_dir') {
 			delete files[filename.slice(0, -'.dont_expect_an_empty_dir_entry_for_this_dir'.length)];
 		} else if (!['.DS_Store', '.git_please_make_this_directory'].includes(dirent.name)) {
-			files[filename] = fs.readFileSync(pathJoin(fullPath, dirent.name));
+			files[filename] = readFileSync(pathJoin(fullPath, dirent.name));
 		}
 	}
 }

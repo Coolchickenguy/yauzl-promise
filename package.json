@@ -3,6 +3,7 @@
   "version": "4.0.0",
   "description": "Unzip library for NodeJS",
   "main": "index.js",
+  "type": "module",
   "files": [
     "lib/**/*.js"
   ],
@@ -40,9 +41,9 @@
   ],
   "scripts": {
     "test": "npm run lint && npm run test-main",
-    "lint": "jest --config=jest-eslint.config.js",
+    "lint": "jest --config=jest-eslint.config.cjs",
     "lint-fix": "eslint . --fix",
-    "test-main": "jest --testPathIgnorePatterns=\"/node_modules/|mac-big.test.js\"",
+    "test-main": "NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules\" jest --testPathIgnorePatterns=\"/node_modules/|mac-big.test.js\"",
     "test-mac-big": "jest test/mac-big.test.js",
     "cover": "npm-run-all -c cover-main cover-cleanup",
     "cover-main": "jest --coverage --testPathIgnorePatterns=\"/node_modules/|mac-big.test.js\"",

@@ -3,42 +3,40 @@
  * Tests
  * ------------------*/
 
-'use strict';
-
 // Init
-require('./support/index.js');
+import './support/index.js';
 
 // Modules
-const pathJoin = require('node:path').join,
-	fs = require('node:fs'),
-	{promisify} = require('node:util'),
-	ReadableStream = require('node:stream').Readable,
-	yauzl = require('yauzl-promise');
-
-const openAsync = promisify(fs.open);
+import {join as pathJoin} from 'node:path';
+import {open, readFileSync} from 'node:fs';
+import {promisify} from 'node:util';
+import {Readable as ReadableStream} from 'node:stream';
+import {open as _open, fromFd, fromBuffer, Reader, fromReader, Zip, Entry} from 'yauzl-promise';
 
 // Imports
-const {streamToString} = require('./support/utils.js');
+import {streamToString, testsRoot} from './support/utils.js';
+
+const openAsync = promisify(open);
 
 // Tests
 
-const PATH = pathJoin(__dirname, 'fixtures/basic/test.zip'),
-	BAD_PATH = pathJoin(__dirname, 'fixtures/basic/does-not-exist.zip'),
+const PATH = pathJoin(testsRoot, 'fixtures/basic/test.zip'),
+	BAD_PATH = pathJoin(testsRoot, 'fixtures/basic/does-not-exist.zip'),
 	FILES = ['test_files/', 'test_files/1.txt', 'test_files/2.txt', 'test_files/3.txt'];
 
 const FILE_CONTENTS = Object.create(null);
 for (const filename of FILES) {
 	if (filename.endsWith('/')) continue;
-	FILE_CONTENTS[filename] = fs.readFileSync(pathJoin(__dirname, 'fixtures/basic', filename), 'utf8');
+	FILE_CONTENTS[filename] = readFileSync(pathJoin(testsRoot, 'fixtures/basic', filename), 'utf8');
 }
 
-const ZIP_BUFFER = fs.readFileSync(PATH);
+const ZIP_BUFFER = readFileSync(PATH);
 
 describe('.open()', () => {
-	defineTests('open', () => yauzl.open(PATH));
+	defineTests('open', () => _open(PATH));
 
 	it('returns rejected promise if IO error', () => {
-		const promise = yauzl.open(BAD_PATH);
+		const promise = _open(BAD_PATH);
 		expect(promise).toBeInstanceOf(Promise);
 		return expect(promise).toReject(); // eslint-disable-line jest/no-test-return-statement
 	});
@@ -50,15 +48,15 @@ describe('.fromFd()', () => {
 		fd = await openAsync(PATH);
 	});
 
-	defineTests('fromFd', () => yauzl.fromFd(fd));
+	defineTests('fromFd', () => fromFd(fd));
 });
 
 describe('.fromBuffer()', () => {
-	defineTests('fromBuffer', () => yauzl.fromBuffer(Buffer.from(ZIP_BUFFER)));
+	defineTests('fromBuffer', () => fromBuffer(Buffer.from(ZIP_BUFFER)));
 });
 
 describe('.fromReader()', () => {
-	class MyReader extends yauzl.Reader {
+	class MyReader extends Reader {
 		async _read(start, length) { // eslint-disable-line class-methods-use-this
 			return ZIP_BUFFER.subarray(start, start + length);
 		}
@@ -68,7 +66,7 @@ describe('.fromReader()', () => {
 		}
 	}
 
-	defineTests('fromReader', () => yauzl.fromReader(new MyReader(), ZIP_BUFFER.length));
+	defineTests('fromReader', () => fromReader(new MyReader(), ZIP_BUFFER.length));
 });
 
 function defineTests(methodName, method) {
@@ -76,7 +74,7 @@ function defineTests(methodName, method) {
 		const promise = method();
 		expect(promise).toBeInstanceOf(Promise);
 		const zip = await promise;
-		expect(zip).toBeInstanceOf(yauzl.Zip);
+		expect(zip).toBeInstanceOf(Zip);
 	});
 
 	it('.close() returns a Promise', async () => {
@@ -106,7 +104,7 @@ function defineTests(methodName, method) {
 
 			it('returns a Promise resolving to `Entry` object', () => {
 				expect(promise).toBeInstanceOf(Promise);
-				expect(entry).toBeInstanceOf(yauzl.Entry);
+				expect(entry).toBeInstanceOf(Entry);
 			});
 
 			it('returns first entry', () => {
