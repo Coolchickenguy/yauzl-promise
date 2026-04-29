@@ -3,17 +3,15 @@
  * Tests
  * ------------------*/
 
-'use strict';
-
 // Init
-require('./support/index.js');
+import './support/index.js';
 
 // Modules
-const PassThroughStream = require('stream').PassThrough,
-	yauzl = require('yauzl-promise');
+import {PassThrough as PassThroughStream} from 'stream';
+import {fromReader, Reader} from 'yauzl-promise';
 
 // Imports
-const {streamToBuffer} = require('./support/utils.js');
+import {streamToBuffer} from './support/utils.js';
 
 // Tests
 
@@ -74,7 +72,7 @@ describe('Reads ranges correctly', () => {
 	let reader, zip, entries;
 	beforeEach(async () => {
 		reader = new StingyRandomAccessReader(ZIP_BUFFER); // eslint-disable-line no-use-before-define
-		zip = await yauzl.fromReader(reader, ZIP_BUFFER.length);
+		zip = await fromReader(reader, ZIP_BUFFER.length);
 		entries = await zip.readEntries();
 	});
 
@@ -117,7 +115,7 @@ describe('Reads ranges correctly', () => {
 	});
 });
 
-class StingyRandomAccessReader extends yauzl.Reader {
+class StingyRandomAccessReader extends Reader {
 	constructor(buffer) {
 		super();
 		this.buffer = buffer;

@@ -6,23 +6,21 @@
 /* eslint jest/no-standalone-expect: ["error", {"additionalTestBlockFunctions": ["testEachFile"]}] */
 /* eslint-disable jest/no-conditional-expect */
 
-'use strict';
-
 // Init
-require('./support/index.js');
+import './support/index.js';
 
 // Modules
-const pathJoin = require('path').join,
-	fs = require('fs'),
-	yauzl = require('yauzl-promise');
+import {join as pathJoin} from 'path';
+import {readdirSync, readFileSync} from 'fs';
+import {open} from 'yauzl-promise';
 
 // Imports
-const {streamToBuffer, getFiles} = require('./support/utils.js');
+import {streamToBuffer, getFiles, testsDirectory} from './support/utils.js';
 
 // Tests
 
-const SUCCESS_DIR = pathJoin(__dirname, 'fixtures/success'),
-	FAILURE_DIR = pathJoin(__dirname, 'fixtures/failure');
+const SUCCESS_DIR = pathJoin(testsDirectory, 'fixtures/success'),
+	FAILURE_DIR = pathJoin(testsDirectory, 'fixtures/failure');
 
 // This is the date example ZIP files and their content files were made,
 // so this timestamp will be earlier than all the ones stored in these test ZIP files
@@ -37,7 +35,7 @@ testEachFile('Successfully unzips', SUCCESS_DIR, describe, (zipFilename, zipPath
 		['options.decodeStrings = true', true],
 		['options.decodeStrings = false', false]
 	])('%s', async (testName, decodeStrings) => {
-		const zip = await yauzl.open(zipPath, {...options.zip, decodeStrings});
+		const zip = await open(zipPath, {...options.zip, decodeStrings});
 
 		try {
 			let entryCount = 0;
@@ -88,7 +86,7 @@ testEachFile('Errors unzipping', FAILURE_DIR, it, async (zipFilename, zipPath, o
 	const expectedErrorMessage = zipFilename.replace(/(_\d+)?\.zip$/, '');
 
 	const promise = (async () => {
-		const zip = await yauzl.open(zipPath, options.zip);
+		const zip = await open(zipPath, options.zip);
 		for await (const entry of zip) {
 			const stream = await entry.openReadStream(options.stream);
 			await streamToBuffer(stream);
@@ -103,7 +101,7 @@ testEachFile('Errors unzipping', FAILURE_DIR, it, async (zipFilename, zipPath, o
 });
 
 function testEachFile(name, dirPath, describeOrIt, testFn) {
-	const filenames = fs.readdirSync(dirPath)
+	const filenames = readdirSync(dirPath)
 		.filter(filename => /\.zip$/.test(filename))
 		.sort();
 
@@ -113,7 +111,7 @@ function testEachFile(name, dirPath, describeOrIt, testFn) {
 
 			let options = {};
 			try {
-				options = JSON.parse(fs.readFileSync(`${zipPath.slice(0, -4)}.json`));
+				options = JSON.parse(readFileSync(`${zipPath.slice(0, -4)}.json`));
 			} catch (err) {
 				if (err?.code !== 'ENOENT') throw err;
 			}
