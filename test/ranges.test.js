@@ -7,11 +7,11 @@
 import './support/index.js';
 
 // Modules
-import {PassThrough as PassThroughStream} from 'stream';
-import {fromReader, Reader} from 'yauzl-promise';
+import { PassThrough as PassThroughStream } from 'stream';
+import { fromReader, Reader } from 'yauzl-promise';
 
 // Imports
-import {streamToBuffer} from './support/utils.js';
+import { streamToBuffer } from './support/utils.js';
 
 // Tests
 
@@ -35,7 +35,7 @@ import {streamToBuffer} from './support/utils.js';
 // zip out.zip -e encrypted-and-compressed.txt
 // ```
 const ZIP_BUFFER = hexToBuffer(
-	'504b03040a00000000006a54954ab413389510000000100000000a001c007374'
+  '504b03040a00000000006a54954ab413389510000000100000000a001c007374'
   + '6f7265642e7478745554090003d842fa5842c5f75875780b000104e803000004'
   + 'e803000061616162616161626161616261616162504b03041400000008007554'
   + '954ab413389508000000100000000e001c00636f6d707265737365642e747874'
@@ -58,90 +58,91 @@ const ZIP_BUFFER = hexToBuffer(
   + '03000004e8030000504b01021e031400090008008a54954ab413389514000000'
   + '100000001c0018000000000001000000b48117010000656e637279707465642d'
   + '616e642d636f6d707265737365642e74787455540500031343fa5875780b0001'
-  + '04e803000004e8030000504b0506000000000400040059010000910100000000'
+  + '04e803000004e8030000504b0506000000000400040059010000910100000000',
 );
 
 const EXPECTED_FILE_DATAS = [
-	hexToBuffer('61616162616161626161616261616162'),
-	hexToBuffer('4b4c4c4c4a44c200'),
-	hexToBuffer('f72e7bb915142131c934f01b163fcadb2a8db7cdafd0a6f4dd1694c0'),
-	hexToBuffer('7c4d3ea0d9754b470d3eb32ada5741bfc848f419')
+  hexToBuffer('61616162616161626161616261616162'),
+  hexToBuffer('4b4c4c4c4a44c200'),
+  hexToBuffer('f72e7bb915142131c934f01b163fcadb2a8db7cdafd0a6f4dd1694c0'),
+  hexToBuffer('7c4d3ea0d9754b470d3eb32ada5741bfc848f419'),
 ];
 
 describe('Reads ranges correctly', () => {
-	let reader, zip, entries;
-	beforeEach(async () => {
-		reader = new StingyRandomAccessReader(ZIP_BUFFER); // eslint-disable-line no-use-before-define
-		zip = await fromReader(reader, ZIP_BUFFER.length);
-		entries = await zip.readEntries();
-	});
+  let reader; let zip; let
+    entries;
+  beforeEach(async () => {
+    reader = new StingyRandomAccessReader(ZIP_BUFFER);  
+    zip = await fromReader(reader, ZIP_BUFFER.length);
+    entries = await zip.readEntries();
+  });
 
-	afterEach(async () => {
-		if (zip) await zip.close();
-	});
+  afterEach(async () => {
+    if (zip) await zip.close();
+  });
 
-	describe.each([
-		['uncompressed + unencrypted', false, false],
-		['compressed + unencrypted', true, false],
-		['uncompressed + encrypted', false, true],
-		['compressed + encrypted', true, true]
-	])('%s', (testName, isCompressed, isEncrypted) => {
-		const entryIndex = isCompressed * 1 + isEncrypted * 2;
+  describe.each([
+    ['uncompressed + unencrypted', false, false],
+    ['compressed + unencrypted', true, false],
+    ['uncompressed + encrypted', false, true],
+    ['compressed + encrypted', true, true],
+  ])('%s', (testName, isCompressed, isEncrypted) => {
+    const entryIndex = isCompressed * 1 + isEncrypted * 2;
 
-		describe.each([[null], [0], [2]])('start: %s', (start) => {
-			it.each([[null], [3], [5]])('end: %s', async (end) => {
-				// Check structure of ZIP is as we expect
-				const entry = entries[entryIndex];
-				expect(entry.isCompressed()).toBe(isCompressed);
-				expect(entry.isEncrypted()).toBe(isEncrypted);
+    describe.each([[null], [0], [2]])('start: %s', (start) => {
+      it.each([[null], [3], [5]])('end: %s', async (end) => {
+        // Check structure of ZIP is as we expect
+        const entry = entries[entryIndex];
+        expect(entry.isCompressed()).toBe(isCompressed);
+        expect(entry.isEncrypted()).toBe(isEncrypted);
 
-				const expectedFileData = EXPECTED_FILE_DATAS[entryIndex];
-				const effectiveStart = start != null ? start : 0;
-				const effectiveEnd = end != null ? end : expectedFileData.length;
-				const expectedSlice = expectedFileData.slice(effectiveStart, effectiveEnd);
+        const expectedFileData = EXPECTED_FILE_DATAS[entryIndex];
+        const effectiveStart = start != null ? start : 0;
+        const effectiveEnd = end != null ? end : expectedFileData.length;
+        const expectedSlice = expectedFileData.slice(effectiveStart, effectiveEnd);
 
-				// The next read will be to check the local file header.
-				// Then we assert that yauzl is asking for just the bytes we asked for.
-				reader.upcomingByteCounts = [null, expectedSlice.length];
+        // The next read will be to check the local file header.
+        // Then we assert that yauzl is asking for just the bytes we asked for.
+        reader.upcomingByteCounts = [null, expectedSlice.length];
 
-				const options = {decompress: false, decrypt: false, validateCrc32: false};
-				if (start !== null) options.start = start;
-				if (end !== null) options.end = end;
-				const stream = await zip.openReadStream(entry, options);
-				const buffer = await streamToBuffer(stream);
-				expect(buffer).toEqual(expectedSlice);
-			});
-		});
-	});
+        const options = { decompress: false, decrypt: false, validateCrc32: false };
+        if (start !== null) options.start = start;
+        if (end !== null) options.end = end;
+        const stream = await zip.openReadStream(entry, options);
+        const buffer = await streamToBuffer(stream);
+        expect(buffer).toEqual(expectedSlice);
+      });
+    });
+  });
 });
 
 class StingyRandomAccessReader extends Reader {
-	constructor(buffer) {
-		super();
-		this.buffer = buffer;
-		this.upcomingByteCounts = [];
-	}
+  constructor(buffer) {
+    super();
+    this.buffer = buffer;
+    this.upcomingByteCounts = [];
+  }
 
-	_createReadStream(start, length) {
-		if (this.upcomingByteCounts.length > 0) {
-			const expectedByteCount = this.upcomingByteCounts.shift();
-			if (expectedByteCount != null) {
-				if (expectedByteCount !== length) {
-					throw new Error(`expected ${expectedByteCount} got ${length} bytes`);
-				}
-			}
-		}
-		const result = new PassThroughStream();
-		result.write(this.buffer.slice(start, start + length));
-		result.end();
-		return result;
-	}
+  _createReadStream(start, length) {
+    if (this.upcomingByteCounts.length > 0) {
+      const expectedByteCount = this.upcomingByteCounts.shift();
+      if (expectedByteCount != null) {
+        if (expectedByteCount !== length) {
+          throw new Error(`expected ${expectedByteCount} got ${length} bytes`);
+        }
+      }
+    }
+    const result = new PassThroughStream();
+    result.write(this.buffer.slice(start, start + length));
+    result.end();
+    return result;
+  }
 }
 
 function hexToBuffer(hexString) {
-	const buffer = Buffer.alloc(hexString.length / 2);
-	for (let i = 0; i < buffer.length; i++) {
-		buffer[i] = parseInt(hexString.substr(i * 2, 2), 16);
-	}
-	return buffer;
+  const buffer = Buffer.alloc(hexString.length / 2);
+  for (let i = 0; i < buffer.length; i++) {
+    buffer[i] = parseInt(hexString.substr(i * 2, 2), 16);
+  }
+  return buffer;
 }
