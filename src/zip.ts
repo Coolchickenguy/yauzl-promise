@@ -315,7 +315,7 @@ export default class Zip {
     // Bytes 42-45: Relative offset of Local File Header
     let fileHeaderOffset = entryBuffer.readUInt32LE(42);
 
-     
+
     assert((generalPurposeBitFlag & 0x40) === 0, 'Strong encryption is not supported');
 
     // Get filename
@@ -326,7 +326,7 @@ export default class Zip {
       'Invalid Central Directory File Header',
     );
     const extraBuffer = await this.reader.read(extraDataOffset, extraDataSize);
-    const isUtf8 = (generalPurposeBitFlag & 0x800) !== 0;  
+    const isUtf8 = (generalPurposeBitFlag & 0x800) !== 0;
     let filename = this._decodeBuffer(extraBuffer, 0, filenameLength, isUtf8, false);
 
     // Get extra fields
@@ -422,7 +422,7 @@ export default class Zip {
     if (this.validateEntrySizes && compressionMethod === 0) {
       // Lowest bit of General Purpose Bit Flag is for traditional encryption.
       // Traditional encryption prefixes the file data with a header.
-      const expectedCompressedSize = (generalPurposeBitFlag & 0x1)  
+      const expectedCompressedSize = (generalPurposeBitFlag & 0x1)
         ? uncompressedSize + 12
         : uncompressedSize;
       assert(
@@ -499,11 +499,11 @@ export default class Zip {
 	 * Usage: `for await (const entry of zip) { ... }`
 	 * @returns - Async iterator
 	 */
-  [Symbol.asyncIterator]() {
+  [Symbol.asyncIterator](): AsyncIterator<Entry> {
     return {
       next: async () => {
         const entry = await this.readEntry();
-        return { value: entry, done: entry === null };
+        return { value: entry, done: entry === null } as {value: Entry, done: false} | {value: null, done: true};
       },
     };
   }
